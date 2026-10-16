@@ -112,6 +112,16 @@
   }
   .apply:hover { background: var(--pink-soft); }
   .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  .status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .status .stamp { margin-top: 0; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: 1px; }
+  .badge-new { font-size: 11px; font-weight: 800; letter-spacing: .04em; background: var(--pink); color: #fff; padding: 2px 7px; border-radius: 6px; }
+  .tag.live { color: var(--green); border-color: #bbf7d0; background: #f0fdf4; }
+  .past { color: var(--muted); text-decoration: line-through; }
+  details.closed { margin-top: 28px; }
+  details.closed summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  details.closed ul { font-size: 14px; color: var(--muted); }
+  .loading { color: var(--muted); padding: 40px 0; text-align: center; }
 
   footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 18px; }
   footer h3 { color: var(--text); font-size: 15px; }
@@ -122,14 +132,17 @@
 <div class="wrap">
   <header>
     <h1>Summer 2027 <span>MBA Internship</span> Feed</h1>
-    <p>Consulting and leadership development programs (LDPs) in the US and China. Each card links to the employer's own careers or application page.</p>
-    <span class="stamp">Researched Oct 16, 2026 · deadlines move, so confirm on the employer's site</span>
+    <p>Consulting, leadership development programs (LDPs) and strategy roles in the US and China. An agent checks live job feeds every 6 hours, remembers what it has already seen, and updates this page. Each card links to the employer's own posting.</p>
+    <div class="status">
+      <span class="stamp" id="updated"><span class="dot"></span>Loading latest data…</span>
+      <span class="stamp" id="summary"></span>
+    </div>
   </header>
 
   <div class="callout">
     <b>About US work authorization.</b> On an F-1 visa you can usually do a US summer internship on CPT without employer sponsorship. What matters is whether the firm will sponsor an H-1B for a <i>full-time return offer</i>. The badges show:
     <ul>
-      <li><span class="visa yes">Sponsors MBA hires</span> The firm is known to sponsor MBA hires. Still confirm for your specific office.</li>
+      <li><span class="visa yes">Sponsors</span> The posting offers sponsorship, or the firm is known to sponsor MBA hires (curated). Still confirm for your office.</li>
       <li><span class="visa ask">Not stated · ask</span> The posting doesn't say. Ask the recruiter before you invest time.</li>
       <li><span class="visa no">No sponsorship</span> The posting rules out sponsorship. These cards are hidden by default.</li>
       <li><span class="visa cn">China work eligibility</span> China roles generally require Chinese citizenship or a valid China work permit.</li>
@@ -147,13 +160,16 @@
       <button class="chip" data-v="Consulting">Consulting</button>
       <button class="chip" data-v="LDP">LDP / Rotational</button>
       <button class="chip" data-v="Strategy">Corp Strategy</button>
+      <button class="chip" data-v="Other">Other MBA roles</button>
     </div>
     <input type="search" id="q" placeholder="Search company, role, city…">
+    <label class="toggle"><input type="checkbox" id="newOnly"> New this week only</label>
     <label class="toggle"><input type="checkbox" id="showNo"> Show roles with no sponsorship</label>
   </div>
 
   <div class="count" id="count"></div>
-  <div class="grid" id="grid"></div>
+  <div class="grid" id="grid"><div class="loading">Loading opportunities…</div></div>
+  <details class="closed" id="closedBox" hidden><summary id="closedSummary"></summary><ul id="closedList"></ul></details>
 
   <footer>
     <h3>How to use this</h3>
@@ -161,6 +177,7 @@
       <li>Expected MBB first-year MBA deadlines fall in <b>November 2026</b>, and many schools set their own dates. Your school's career office (e.g., Yale SOM CDO) will have the exact dates for your program.</li>
       <li>For China postings, also check the employer's WeChat campus-recruiting (校园招聘) account. Many China MBA intern roles are posted there first.</li>
       <li>"Careers portal" cards mean no 2027 MBA posting was confirmed yet. Bookmark the page and check back.</li>
+      <li><b>Live feed</b> cards come from Amazon Jobs, company Workday sites and a community-maintained MBA internship list. The agent reads each new posting once to fill in deadline, visa language and a short note. When a posting disappears, it moves to "Recently closed."</li>
     </ul>
     <h3>Research sources</h3>
     <ul>
@@ -169,221 +186,101 @@
       <li><a href="https://www.hackingthecaseinterview.com/pages/mckinsey-china-recruiting" target="_blank" rel="noopener">Hacking the Case Interview: McKinsey China recruiting</a></li>
       <li><a href="https://www.hackingthecaseinterview.com/pages/consulting-visa-sponsorship" target="_blank" rel="noopener">Hacking the Case Interview: Consulting visa sponsorship</a></li>
       <li><a href="https://www.extern.com/post/consulting-internships-summer-2027-guide" target="_blank" rel="noopener">Extern: Consulting internships summer 2027</a></li>
-      <li><a href="https://github.com/TrevorDohm/MBA-Tech-Internships-2027" target="_blank" rel="noopener">GitHub: MBA-Tech-Internships-2027 (community list)</a></li>
+      <li><a href="https://github.com/TrevorDohm/MBA-Tech-Internships-2027" target="_blank" rel="noopener">GitHub: MBA-Tech-Internships-2027 (community list, read by the agent)</a></li>
       <li><a href="https://ocs.yale.edu/blog/2026/03/06/mckinsey-bain-and-bcg-application-deadlines-for-2026-summer-and-full-time-roles/" target="_blank" rel="noopener">Yale OCS: McKinsey, Bain and BCG deadlines</a></li>
     </ul>
   </footer>
 </div>
 
 <script>
-// Edit this list to add, remove, or update opportunities.
-// visa: "yes" | "ask" | "no" | "cn"
-const ROLES = [
-  // ---------- US · Consulting ----------
-  { company: "McKinsey & Company", role: "Summer Associate (1st-year MBA)", region: "US", type: "Consulting",
-    location: "US offices", deadline: "Expected Nov 2026 (school-specific)", visa: "yes",
-    note: "Sponsors MBA hires. Choose the office and school round in the portal.",
-    url: "https://www.mckinsey.com/careers/students" },
-  { company: "Boston Consulting Group", role: "Summer Consultant (MBA1)", region: "US", type: "Consulting",
-    location: "US offices", deadline: "~Nov 10, 2026", deadlineDate: "2026-11-10", visa: "yes",
-    note: "Deadline per Management Consulted. Confirm your school's round.",
-    url: "https://careers.bcg.com/early-careers" },
-  { company: "Bain & Company", role: "Summer Associate (1st-year MBA)", region: "US", type: "Consulting",
-    location: "US offices", deadline: "Expected Nov 2026", visa: "yes",
-    note: "Sponsors MBA hires. Bain Middle East closes Oct 30, 2026, if you're also open to that region.",
-    url: "https://www.bain.com/careers/work-with-us/students/" },
-  { company: "Kearney", role: "MBA Boot Camp / Summer Associate 2027", region: "US", type: "Consulting",
-    location: "US offices", deadline: "Posting live (rolling)", visa: "yes",
-    note: "Sponsors at the MBA level, but policy can vary by office. 10-week program, about $16k/month.",
-    url: "https://kearney.recsolu.com/jobs/sk7Zw8_c70krl7hEfMs8yw?job_board_id=EPd41qlA4_03IncZMnWyRQ" },
-  { company: "Oliver Wyman", role: "2027 MBA Summer Associate (incl. Health & Life Sciences)", region: "US", type: "Consulting",
-    location: "Boston · Chicago · NYC · SF", deadline: "Expected Dec 2026", visa: "yes",
-    note: "Sponsors at the MBA level. 9 weeks, $32,850 plus a $3k signing bonus. Some practice postings may already be filled.",
-    url: "https://careers.marshmclennan.com/global/en/oliver-wyman" },
-  { company: "L.E.K. Consulting", role: "MBA Summer Associate", region: "US", type: "Consulting",
-    location: "US offices", deadline: "2027 posting not confirmed", visa: "yes",
-    note: "Historically sponsors MBA hires. Confirm with the recruiter.",
-    url: "https://www.lek.com/careers" },
+// Roles come from data.json, which the internship agent (scripts/agent.py) rewrites every 6 hours.
+// To add a hand-picked role, edit curated.json; the agent merges it in on its next run.
+const VISA_LABEL = { yes: "Sponsors", ask: "Not stated · ask", no: "No sponsorship", cn: "China work eligibility" };
+const TYPE_LABEL = { Consulting: "Consulting", LDP: "LDP / Rotational", Strategy: "Corp Strategy", Other: "Other MBA role" };
+const TYPE_ORDER = { Consulting: 0, LDP: 1, Strategy: 2, Other: 3 };
+const state = { region: "all", type: "all", q: "", showNo: false, newOnly: false };
+let ROLES = [];
+const TODAY = new Date(new Date().toDateString());
 
-  // ---------- US · LDP / Rotational ----------
-  { company: "Amazon", role: "2027 MBA Leadership Development Program (MLDP) Intern", region: "US", type: "LDP",
-    location: "Seattle, WA", deadline: "Rolling (apply early)", visa: "ask",
-    note: "12 weeks; cohorts start May 24 or Jun 14, 2027. Pay $121k–$164k annualized. Can lead to the full-time 3-year MLDP. Amazon is a major H-1B sponsor, but this posting doesn't address visas.",
-    url: "https://www.amazon.jobs/en/jobs/10491603/2027-mba-leadership-development-program-mldp-intern" },
-  { company: "Amazon", role: "2027 MBA Finance Leadership Development Program (FLDP) Intern", region: "US", type: "LDP",
-    location: "Multiple US", deadline: "Rolling", visa: "ask",
-    note: "Finance rotational track. Ask the recruiter about sponsorship.",
-    url: "https://www.amazon.jobs/en/jobs/10492198/2027-mba-finance-leadership-development-program-fldp-internship" },
-  { company: "Amazon", role: "2027 Amazon Leadership Accelerator (ALA) PM Intern", region: "US", type: "LDP",
-    location: "Multiple US", deadline: "Rolling", visa: "ask",
-    note: "Product management leadership track.",
-    url: "https://www.amazon.jobs/en/jobs/10491935/2027-amazon-leadership-accelerator-ala-product-manager-internship" },
-  { company: "Amazon Web Services", role: "Summer 2027 AWS HR Leadership Development Program Intern", region: "US", type: "LDP",
-    location: "Seattle, WA (in person)", deadline: "Rolling", visa: "yes",
-    note: "School job boards list this role as 'Hires international students.' 12 weeks. Search the role title on amazon.jobs.",
-    url: "https://www.amazon.jobs/en/search?base_query=AWS+HR+Leadership+Development+Program+2027" },
-  { company: "Amgen", role: "MBA Intern – Commercial Leadership Program (Summer 2027)", region: "US", type: "LDP",
-    location: "US / Washington", deadline: "Open now", visa: "ask",
-    note: "Amgen's MBA pipeline for commercial leaders. You must be in the US for the whole internship.",
-    url: "https://careers.amgen.com/en/job/washington/mba-intern-commercial-leadership-program-summer-2027/87/99856557248" },
-  { company: "Amgen", role: "MBA Intern – Finance & Strategy Leadership Development Program", region: "US", type: "LDP",
-    location: "Remote / Washington, D.C.", deadline: "Open now", visa: "ask",
-    note: "Requires completing your first MBA year before the start date.",
-    url: "https://careers.amgen.com/en/job/washington-d-c/mba-intern-finance-and-strategy-leadership-development-program-summer-2027/87/99856557264" },
-  { company: "Google", role: "MBA Intern, Summer 2027", region: "US", type: "LDP",
-    location: "US", deadline: "Open now", visa: "ask",
-    note: "First-year MBAs only. Full-time, 12 consecutive weeks between May and Sept 2027, with a 1:1 mentor.",
-    url: "https://www.google.com/about/careers/applications/jobs/results/121103710599160518-mba-intern-summer-2027" },
-  { company: "Microsoft", role: "MBA Intern, Summer 2027 (Product / Business)", region: "US", type: "LDP",
-    location: "Redmond, WA + US", deadline: "Not yet posted", visa: "yes",
-    note: "Interns typically use CPT. Microsoft is one of the largest H-1B sponsors for full-time conversion.",
-    url: "https://careers.microsoft.com/v2/global/en/universityinternship" },
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
-  // ---------- US · Corporate Strategy ----------
-  { company: "Intuit", role: "Summer 2027 MBA Corporate Strategy & Development Intern", region: "US", type: "Strategy",
-    location: "Mountain View, CA", deadline: "Open now", visa: "ask",
-    note: "Intuit also has MBA Strategy & Transformation, Pricing, and Finance Strategy intern roles.",
-    url: "https://jobs.intuit.com/job/mountain-view/summer-2027-mba-corporate-strategy-and-development-intern/27595/101313096080" },
-  { company: "Adobe", role: "2027 MBA Intern – Corporate Strategy", region: "US", type: "Strategy",
-    location: "San Francisco, CA", deadline: "Open now", visa: "ask",
-    note: "You'd own a project on Adobe's long-term growth.",
-    url: "https://adobe.wd5.myworkdayjobs.com/external_experienced/job/San-Francisco/XMLNAME-2027-MBA-Intern---Corporate-Strategy_R172471" },
-  { company: "TikTok", role: "Strategy Intern – Monetization Strategy & Operations (MBA)", region: "US", type: "Strategy",
-    location: "US", deadline: "Open now", visa: "ask",
-    note: "Also see ByteDance's China campus portal below.",
-    url: "https://lifeattiktok.com/search/7683675373903415557" },
-
-  // ---------- US · No sponsorship (hidden by default) ----------
-  { company: "Johnson & Johnson", role: "Summer 2027 MedTech Marketing LDP (MLDP) MBA Intern", region: "US", type: "LDP",
-    location: "NJ · CA · FL · MA · OH", deadline: "Oct 31, 2026", deadlineDate: "2026-10-31", visa: "no",
-    note: "Requires permanent US work authorization. The posting says students on CPT, OPT, or STEM OPT typically don't qualify.",
-    url: "https://www.careers.jnj.com/en/jobs/r-095504/summer-2027-mba-internship-medtech-marketing-leadership-development-program-mldp/" },
-  { company: "Johnson & Johnson", role: "Finance MBA Leadership Development Program Intern", region: "US", type: "LDP",
-    location: "US", deadline: "Fall 2026", visa: "no",
-    note: "Requires permanent US work authorization.",
-    url: "https://www.careers.jnj.com/en/early-career-programs/leadership-development-programs/finance-mba-leadership-development-program/" },
-  { company: "Bank of America", role: "Strategy & Management Summer Associate 2027", region: "US", type: "Strategy",
-    location: "Multiple US", deadline: "Oct 16, 2026", deadlineDate: "2026-10-16", visa: "no",
-    note: "The posting says no sponsorship.",
-    url: "https://careers.bankofamerica.com/en-us/students/job-detail/14832/strategy-management-summer-associate-program-2027-multiple-locations" },
-  { company: "JPMorgan Chase", role: "2027 Chase Associate Program – Summer Associate", region: "US", type: "LDP",
-    location: "NYC · OH · TX · DE", deadline: "Open now", visa: "no",
-    note: "The posting says no sponsorship.",
-    url: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210766078" },
-  { company: "Capital One", role: "MBA Product Intern (feeds MBA Development Program)", region: "US", type: "LDP",
-    location: "McLean, VA", deadline: "Open now", visa: "no",
-    note: "The posting says no sponsorship.",
-    url: "https://www.capitalonecareers.com/job/mclean/mba-product-intern-summer-2027/1732/101404678752" },
-  { company: "IBM", role: "2027 Finance Leadership Development Program (FLDP) Summer Intern", region: "US", type: "LDP",
-    location: "US", deadline: "Open now", visa: "no",
-    note: "The posting says no sponsorship.",
-    url: "https://careers.ibm.com/careers/JobDetail?jobId=128929" },
-
-  // ---------- China · Consulting ----------
-  { company: "McKinsey Greater China", role: "Summer Associate (MBA intern)", region: "China", type: "Consulting",
-    location: "Beijing · Shanghai · Shenzhen", deadline: "Window ~Oct–Dec 2026", visa: "cn",
-    note: "Apply through the global portal and select a Greater China office. Interns join live engagements with teams of 3–5.",
-    url: "https://www.mckinsey.com/careers/students" },
-  { company: "BCG Greater China", role: "Summer Consultant (MBA)", region: "China", type: "Consulting",
-    location: "Shanghai · Beijing · Shenzhen · HK", deadline: "Expected Nov 2026", visa: "cn",
-    note: "Filter the BCG portal by Greater China locations.",
-    url: "https://careers.bcg.com/early-careers" },
-  { company: "Bain Greater China", role: "Summer Associate (MBA)", region: "China", type: "Consulting",
-    location: "Shanghai · Beijing · HK", deadline: "Expected Nov 2026", visa: "cn",
-    note: "Bain China site. You can also apply through bain.com/careers.",
-    url: "https://www.bain.cn/" },
-  { company: "Kearney Greater China", role: "MBA Summer Associate", region: "China", type: "Consulting",
-    location: "Shanghai · Beijing · HK", deadline: "Check portal", visa: "cn",
-    note: "Filter by China offices.",
-    url: "https://www.kearney.com/careers" },
-  { company: "Roland Berger China", role: "MBA Intern / Summer Consultant", region: "China", type: "Consulting",
-    location: "Shanghai · Beijing", deadline: "Check portal", visa: "cn",
-    note: "Has a strong China and automotive/industrial practice.",
-    url: "https://www.rolandberger.com/en/Join/" },
-  { company: "Oliver Wyman Greater China", role: "MBA Summer Associate", region: "China", type: "Consulting",
-    location: "Shanghai · Beijing · HK", deadline: "Check portal", visa: "cn",
-    note: "Search the Marsh McLennan portal for Greater China locations.",
-    url: "https://careers.marshmclennan.com/global/en/oliver-wyman" },
-
-  // ---------- China · LDP / Corporate ----------
-  { company: "Eli Lilly China", role: "MBA Summer Internship – Lilly China Leadership Development Program", region: "China", type: "LDP",
-    location: "Shanghai", deadline: "2027 posting expected (2026 cycle ran mid-Jun–Aug)", visa: "cn",
-    note: "This link is the 2026 posting. Watch for the 2027 version. Requires authorization to intern in China.",
-    url: "https://lilly.wd5.myworkdayjobs.com/en-US/CMP/job/XMLNAME-2026-MBA-Summer-Internship-of-Lilly-China-Leadership-Development-Program_R-93552-1" },
-  { company: "P&G Greater China", role: "MBA Summer Intern (Brand / Finance / Sales)", region: "China", type: "LDP",
-    location: "Guangzhou · Shanghai", deadline: "Careers portal", visa: "cn",
-    note: "Search 'China' plus 'intern' on the portal.",
-    url: "https://www.pgcareers.com/" },
-  { company: "L'Oréal China", role: "Management Trainee / MBA Summer Intern", region: "China", type: "LDP",
-    location: "Shanghai", deadline: "Careers portal", visa: "cn",
-    note: "L'Oréal's MT program is a leading LDP in China.",
-    url: "https://careers.loreal.com/en_US/jobs" },
-  { company: "Unilever China", role: "Future Leaders Programme (UFLP) / Intern", region: "China", type: "LDP",
-    location: "Shanghai", deadline: "Careers portal", visa: "cn",
-    note: "UFLP is Unilever's global leadership pipeline.",
-    url: "https://careers.unilever.com/" },
-  { company: "Alibaba Group", role: "Campus / MBA Strategy Intern", region: "China", type: "Strategy",
-    location: "Hangzhou · Shanghai · Beijing", deadline: "Campus portal", visa: "cn",
-    note: "Summer intern hiring usually opens in spring (Mar–Apr 2027).",
-    url: "https://talent.alibaba.com/" },
-  { company: "Tencent", role: "Campus Intern (Strategy / Product / Ops)", region: "China", type: "Strategy",
-    location: "Shenzhen · Beijing · Shanghai", deadline: "Campus portal", visa: "cn",
-    note: "Summer intern hiring usually opens in spring.",
-    url: "https://join.qq.com/" },
-  { company: "ByteDance", role: "Campus Intern (Strategy / Business Analysis)", region: "China", type: "Strategy",
-    location: "Beijing · Shanghai · Shenzhen", deadline: "Campus portal", visa: "cn",
-    note: "Posts roles year-round. Filter by intern and strategy.",
-    url: "https://jobs.bytedance.com/campus" },
-  { company: "Huawei", role: "Campus / MBA Intern", region: "China", type: "LDP",
-    location: "Shenzhen", deadline: "Careers portal", visa: "cn",
-    note: "",
-    url: "https://career.huawei.com/" },
-];
-
-const VISA_LABEL = { yes: "Sponsors MBA hires", ask: "Not stated · ask", no: "No sponsorship", cn: "China work eligibility" };
-const TYPE_LABEL = { Consulting: "Consulting", LDP: "LDP / Rotational", Strategy: "Corp Strategy" };
-const state = { region: "all", type: "all", q: "", showNo: false };
-const TODAY = new Date("2026-10-16");
-
-function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function daysLeft(r) {
+  return r.deadlineDate ? Math.round((new Date(r.deadlineDate + "T00:00:00") - TODAY) / 86400000) : null;
+}
 
 function deadlineHtml(r) {
-  if (r.deadlineDate) {
-    const days = Math.round((new Date(r.deadlineDate) - TODAY) / 86400000);
-    if (days >= 0 && days <= 30) {
-      return `<span class="deadline-soon">${esc(r.deadline)} · ${days === 0 ? "today" : days + " days left"}</span>`;
-    }
-  }
+  const d = daysLeft(r);
+  if (d === null) return esc(r.deadline);
+  if (d < 0) return `<span class="past">${esc(r.deadline)}</span> (passed)`;
+  if (d <= 30) return `<span class="deadline-soon">${esc(r.deadline)} · ${d === 0 ? "today" : d + " days left"}</span>`;
   return esc(r.deadline);
+}
+
+function ago(isoStr) {
+  const mins = Math.round((Date.now() - new Date(isoStr)) / 60000);
+  if (mins < 60) return `${mins} min ago`;
+  const h = Math.round(mins / 60);
+  return h < 48 ? `${h} hour${h === 1 ? "" : "s"} ago` : `${Math.round(h / 24)} days ago`;
+}
+
+function sortKey(r) {
+  const d = daysLeft(r);
+  const urgency = d === null ? 9999 : d < 0 ? 99999 : d;   // soonest deadline first, passed last
+  return [r.new ? 0 : 1, urgency, TYPE_ORDER[r.type] ?? 9, r.company.toLowerCase()];
+}
+function cmp(a, b) {
+  const ka = sortKey(a), kb = sortKey(b);
+  for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return ka[i] < kb[i] ? -1 : 1;
+  return 0;
 }
 
 function render() {
   const q = state.q.toLowerCase();
-  const rows = ROLES.filter(r =>
+  const open = ROLES.filter(r => r.status === "open");
+  const rows = open.filter(r =>
     (state.region === "all" || r.region === state.region) &&
     (state.type === "all" || r.type === state.type) &&
     (state.showNo || r.visa !== "no") &&
+    (!state.newOnly || r.new) &&
     (!q || [r.company, r.role, r.location, r.note].join(" ").toLowerCase().includes(q))
-  );
-  document.getElementById("count").innerHTML = `Showing <b>${rows.length}</b> of ${ROLES.length} opportunities`;
+  ).sort(cmp);
+  document.getElementById("count").innerHTML = `Showing <b>${rows.length}</b> of ${open.length} open opportunities`;
   document.getElementById("grid").innerHTML = rows.length ? rows.map(r => `
     <article class="card ${r.visa === "no" ? "nosponsor" : ""}">
       <div class="top">
         <h2 class="company">${esc(r.company)}</h2>
-        <span class="visa ${r.visa}">${VISA_LABEL[r.visa]}</span>
+        <span class="visa ${r.visa}">${VISA_LABEL[r.visa] || r.visa}</span>
       </div>
-      <p class="role">${esc(r.role)}</p>
+      <p class="role">${r.new ? '<span class="badge-new">NEW</span> ' : ""}${esc(r.role)}</p>
       <div class="tags">
-        <span class="tag region">${r.region}</span>
-        <span class="tag">${TYPE_LABEL[r.type]}</span>
+        <span class="tag region">${esc(r.region)}</span>
+        <span class="tag">${TYPE_LABEL[r.type] || esc(r.type)}</span>
+        ${r.source !== "curated" ? `<span class="tag live">Live feed · ${esc(r.source)}</span>` : `<span class="tag">Curated</span>`}
       </div>
       <dl>
         <dt>Location</dt><dd>${esc(r.location)}</dd>
         <dt>Deadline</dt><dd>${deadlineHtml(r)}</dd>
+        ${r.posted ? `<dt>Posted</dt><dd>${esc(r.posted)}</dd>` : ""}
       </dl>
       ${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}
       <a class="apply" href="${esc(r.url)}" target="_blank" rel="noopener">Apply on company site →</a>
     </article>`).join("") : `<div class="empty">No matches. Try clearing a filter.</div>`;
+}
+
+function renderMeta(data) {
+  const open = ROLES.filter(r => r.status === "open");
+  const closed = ROLES.filter(r => r.status === "closed");
+  const live = open.filter(r => r.source !== "curated").length;
+  document.getElementById("updated").innerHTML =
+    `<span class="dot"></span>Updated ${ago(data.updated_at)} · checks every ${data.refresh_hours || 6} hours`;
+  document.getElementById("summary").textContent =
+    `${open.length} open · ${live} from live feeds · ${open.filter(r => r.new).length} new this week`;
+  if (closed.length) {
+    document.getElementById("closedBox").hidden = false;
+    document.getElementById("closedSummary").textContent = `Recently closed (${closed.length}). These postings disappeared from their feed.`;
+    document.getElementById("closedList").innerHTML = closed.map(r =>
+      `<li>${esc(r.company)}: ${esc(r.role)} <span>(closed ${esc((r.closed_at || "").slice(0, 10))})</span></li>`).join("");
+  }
 }
 
 document.querySelectorAll(".group").forEach(g => {
@@ -397,7 +294,15 @@ document.querySelectorAll(".group").forEach(g => {
 });
 document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
 document.getElementById("showNo").addEventListener("change", e => { state.showNo = e.target.checked; render(); });
-render();
+document.getElementById("newOnly").addEventListener("change", e => { state.newOnly = e.target.checked; render(); });
+
+fetch("data.json", { cache: "no-store" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => { ROLES = data.roles || []; renderMeta(data); render(); })
+  .catch(err => {
+    document.getElementById("updated").textContent = "Couldn't load data.json";
+    document.getElementById("grid").innerHTML = `<div class="empty">Couldn't load the latest data (${esc(err.message)}). Try refreshing.</div>`;
+  });
 </script>
 </body>
 </html>
